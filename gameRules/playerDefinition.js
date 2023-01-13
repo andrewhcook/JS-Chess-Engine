@@ -1,6 +1,6 @@
-import {King,Queen,Rook, Bishop, Knight, Pawn} from "./individualPieces"
-import {Move} from "./moveDefinition"
-class Player {
+import {King,Queen,Rook, Bishop, Knight, Pawn} from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/individualPieces/index.js"
+import {Move} from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/moveDefinition.js"
+export class Player {
     constructor(name, isComputer, skillLevel, pieceArray, oppPieceArray) {
         this.name = name;
         this.isComputer = isComputer;
@@ -199,5 +199,3 @@ class Player {
     makeMove() {}
     
 }
-
-export default Player

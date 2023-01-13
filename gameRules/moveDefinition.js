@@ -1,4 +1,4 @@
-class Move {
+export class Move {
     constructor(squareAddressFrom, squareAddressTo, piece, isCapture, isCheck, isCheckmate, withAThreat,threatenedPieces) {
         this.squareAddressFrom = squareAddressFrom;
         this.squareAddressTo = squareAddressTo;
@@ -11,4 +11,3 @@ class Move {
     }
 }
 
-export default Move;

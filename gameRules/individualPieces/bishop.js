@@ -1,4 +1,4 @@
-import Piece from "../pieceDefinition";
+import {Piece} from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/pieceDefinition.js";
 
 class Bishop extends Piece {
     movementPattern() {
