@@ -7,12 +7,13 @@ export class Player {
         this.skillLevel = skillLevel;
         this.pieceArray = pieceArray;
         this.oppPieceArray = oppPieceArray;
-        this.tempPieceArray = null;
-        this.tempOppPieceArray = null;
-        this.ownAttackMap = null;
-        this.oppAttackMap = null;
+        this.tempPieceArray = pieceArray;
+        this.tempOppPieceArray = oppPieceArray;
+        this.ownAttackMap = [];
+        this.oppAttackMap = [];
     }
-
+// generate Move List is broken
+// pruneOutBlockedMoves is only returning 6 Pawn @[6,0] moves
     classifyMoves(moveArray) {
         //check for check
         // if check, check for checkmate 
@@ -35,28 +36,30 @@ export class Player {
     }
     generateMoveList() {
         let moveArray = [];
-        let ownPseudoLegalMoves = this.pruneOutBlockedMoves(this.generatePseudoLegalMoveList(true), true)
-        
-        for (let i in ownPseudoLegalMoves) {
-            this.generateOppPieceArrayAfterMove(i);
-            this.generateOppAttackMap();
-            const king_position = typeof i.piece === King ? i.squareAddressTo : this.pieceArray.filter((piece)=> {return typeof piece === King}).squareAddress;
-            if (this.determineIfMovesLeavesKingInCheck(this.tempOppPieceArray)) {
+        let allPseudoLegalMoves = this.generatePseudoLegalMoveList(true);
+       console.log(allPseudoLegalMoves.length);
+        let ownPseudoLegalMoves = this.pruneOutBlockedMoves(allPseudoLegalMoves, true)
+        console.log(ownPseudoLegalMoves.length);
+        for (let i of ownPseudoLegalMoves) {
+          //  this.generateOppPieceArrayAfterMove(i);
+         //   console.log(this.pieceArray)
+            if (this.determineIfMovesLeavesKingInCheck()) {
                 continue
             } else {
                 moveArray.push(i)
             }
         }
+      //  console.log(moveArray.length);
         return moveArray
     }
     generateOppMoveList(physicalBoard) {
         let moveArray = [];
         let oppPseudoLegalMoves = this.pruneOutBlockedMoves(this.generateOppPseudoLegalMoveList(true), false)
         
-        for (let i in oppPseudoLegalMoves) {
+        for (let i of oppPseudoLegalMoves) {
             this.generateOwnPieceArrayAfterMove(i);
             this.generateOppAttackMap();
-            const king_position = typeof i.piece === King ? i.squareAddressTo : this.pieceArray.filter((piece)=> {return typeof piece === King}).squareAddress;
+            
             if (this.determineIfMovesLeavesOppKingInCheck(this.tempPieceArray)) {
                 continue
             } else {
@@ -72,9 +75,11 @@ export class Player {
             iterator = this.tempPieceArray;
         }
         let moveArray = [];
-        for (let i in iterator) {
+        for (let i of iterator) {
+         //   console.log(i);
             let patternIterator = i.movementPattern();
-            for (let j in patternIterator) {
+            for (let j of patternIterator) {
+            //    console.log(j);
                 if (this.determineIfMoveIsOnBoard(i.squareAddress,j)) {
                     let squareTo = [i.squareAddress[0] + j[0], i.squareAddress[1] + j[1]]
                     moveArray.push(new Move(i.squareAddress, squareTo, i, false,false,false, false, []))
@@ -89,9 +94,9 @@ export class Player {
             iterator = this.tempOppPieceArray;
         }
         let moveArray = [];
-        for (let i in iterator) {
+        for (let i of iterator) {
             let patternIterator = i.movementPattern();
-            for (let j in patternIterator) {
+            for (let j of patternIterator) {
                 if (this.determineIfMoveIsOnBoard(i.squareAddress,j)) {
                     let squareTo = [i.squareAddress[0] + j[0], i.squareAddress[1] + j[1]]
                     moveArray.push(new Move(i.squareAddress, squareTo, i, false,false,false, false, []))
@@ -109,12 +114,17 @@ export class Player {
         } else {return true}
     }
     determineIfMovesLeavesKingInCheck() {
-        if (this.oppAttackMap.find(this.getKingPosition(this.tempPieceArray))) {
+       this.generateOppAttackMap();
+        const value = this.getKingPosition(this.pieceArray)
+        if (this.oppAttackMap.find((squareAddress)=> {return squareAddress[0] === value[0] && squareAddress[1] === value[1]})) {
+            
             return true
         } else {return false}
     }
     determineIfMovesLeavesOppKingInCheck() {
-        if (this.AttackMap.find(this.getOppKingPosition(this.tempOppPieceArray))) {
+        const value = this.getKingPosition(this.oppPieceArray)
+        if (this.attackMap.find((squareAddress)=> { squareAddress[0] === value[0] && squareAddress[1] === value[1]})) {
+            
             return true
         } else {return false}
     }
@@ -125,32 +135,34 @@ export class Player {
         }
 
     generateOwnAttackMap() {
+        
         let squareArray = [];
-        for (let i in this.pruneOutBlockedMoves(this.generatePseudoLegalMoveList(),true) ) {
+        for (let i of this.pruneOutBlockedMoves(this.generatePseudoLegalMoveList(true), true) ) {
             const square = i.squareAddressTo;
-            if (squareArray.find(i)) {
+            if (squareArray.find((squareAddress)=> {squareAddress === i[0] && squareAddress[1] === i[1]})) {
                 continue 
             } else {
                 squareArray.push(square);
             }
         }
-        this.attackMap = squareArray
+        this.ownAttackMap = squareArray
     }
     generateOppAttackMap() {
         let squareArray = [];
-        for (let i in this.pruneOutBlockedMoves(this.generateOppPseudoLegalMoveList(), false) ) {
+        for (let i of this.pruneOutBlockedMoves(this.generateOppPseudoLegalMoveList(true), false) ) {
             const square = i.squareAddressTo;
-            if (squareArray.find(i)) {
+            if (squareArray.find((squareAddress)=> {squareAddress === i[0] && squareAddress[1] === i[1]})) {
                 continue 
             } else {
                 squareArray.push(square);
             }
         }
         this.oppAttackMap = squareArray
-        return       
     }
     getKingPosition(pieceArray) {
-        let [king] = pieceArray.filter((piece)=> {typeof piece === King});
+       // console.log(pieceArray);
+        let king = pieceArray.find((piece)=> {return piece.type === "King"});
+      //  console.log(king);
         return king.squareAddress
     }
     getOppKingPosition(oppPieceArray) {
@@ -158,43 +170,76 @@ export class Player {
         return king.squareAddress
     }
     pruneOutBlockedMoves(pseudoLegalMoves, myOwn) {
-        const oppOccupiedSquares = this.oppPieceArray.forEach((piece)=> {return piece.squareAddress});
-        const ownOccupiedSquares = this.pieceArray.forEach((piece) => {return piece.squareAddress});
-        if (!myOwn) {
-            [oppOccupiedSquares, ownOccupiedSquares] = [ownOccupiedSquares, oppOccupiedSquares];
-        };
+        let oppOccupiedSquares = [];
+        let ownOccupiedSquares = [];
+       // console.log(pseudoLegalMoves.length);
+        this.oppPieceArray.forEach((piece)=> {oppOccupiedSquares.push(piece.squareAddress)});
+        this.pieceArray.forEach((piece) => {ownOccupiedSquares.push(piece.squareAddress)});
+        
+
+       // console.log(oppOccupiedSquares)
         let prunedPseudoLegalMoves = [];
-        // determine starting position and piece direction 
-        // determine first blocker along diagonal
-        // prune out moves at or above blocker on the diagonal depending on if the blocker is opp or own
-        // start queen at [0,0] own blocker at [2,2] how to determine moves to prune out along the [0,0] - [7,7] diagonal?
-       // determine start and end point if type is NOT knight determine if any piece lay in between these two points
-        for (let i in pseudoLegalMoves) {
-            if (typeof i.piece === Knight) {
+       // console.log(pseudoLegalMoves.length);
+        for (let i of pseudoLegalMoves) {
+            if (i.piece.type === "Knight") {
+                if (oppOccupiedSquares.find((squareAddress)=> {return squareAddress[0] === i.squareAddressTo[0] && squareAddress[1] === i.squareAddressTo[1]})) {
+                    prunedPseudoLegalMoves.push(i)
+                    
+                } else if (!ownOccupiedSquares.find((squareAddress)=> {return squareAddress[0] === i.squareAddressTo[0] && squareAddress[1] === i.squareAddressTo[1]})) {
+                    prunedPseudoLegalMoves.push(i)
+                }
                 continue
-            };
-            const [rankStart, fileStart] = i.squareAddressFrom;
-            const [rankEnd, fileEnd] = i.squareAddressTo;
-            const rankDirection = rankStart + rankEnd;
-            const fileDirection = fileStart + fileEnd;
-            let [rankLimit, fileLimit] = [0,0];
-            for (let j = 0; j < 7; j++) {
-                if (ownOccupiedSquares.find([rankStart + (j* rankDirection), fileStart + (j * fileDirection)])) {
-                    [rankLimit, fileLimit] = [(j-1)* rankDirection , (j-1)*fileDirection]
-                    break
-                } else if (oppOccupiedSquares.find([rankStart + (j* rankDirection), fileStart + (j * fileDirection)])) {
-                    [rankLimit, fileLimit] = [rankStart + (j* rankDirection), fileStart + (j * fileDirection)];
-                    break
-                } 
             }
-         if (i.squareAddressTo[0] > rankLimit || i.squareAddressTo[1] > fileLimit) {
-            continue
-         } else {
-            prunedPseudoLegalMoves.push(i);
-         }
-        }
+            let rank_iter_direction =  (i.squareAddressTo[0] - i.squareAddressFrom[0]) /  Math.abs(i.squareAddressTo[0] - i.squareAddressFrom[0]);
+            let file_iter_direction = (i.squareAddressTo[1] - i.squareAddressFrom[1]) / Math.abs(i.squareAddressTo[1] - i.squareAddressFrom[1]);
+            if (!rank_iter_direction) {
+                rank_iter_direction = 0;
+            }
+            if (!file_iter_direction) {
+                file_iter_direction = 0;
+            }
+           // console.log(file_iter_direction);
+            let rank_limit = 0;
+            let file_limit = 0;
+            let rank_distance = Math.abs(i.squareAddressFrom[0] - i.squareAddressTo[0]);
+            let file_distance = Math.abs(i.squareAddressFrom[1] - i.squareAddressTo[1]);
+            let iter_distance = Math.max(rank_distance, file_distance);
+            let addmove = true;
+            for (let j = 1; j <= iter_distance; j++) {
+                const new_square = [i.squareAddressFrom[0] + j * rank_iter_direction, i.squareAddressFrom[1] + j * file_iter_direction];
+                let onBoard = true;
+                for (let j of new_square) {
+                    if (j > 7 || j < 0) {
+                        onBoard = false
+                    }
+                }
+                if (!onBoard) {
+                    break
+                }
+
+                if (oppOccupiedSquares.find((squareAddress)=> {return squareAddress[0]=== i.squareAddressFrom[0] + j* rank_iter_direction && squareAddress[1] === i.squareAddressFrom[1] + j * file_iter_direction})) {
+                    if (j < iter_distance) {
+                        addmove = false
+                    }
+                    break
+                } else if (ownOccupiedSquares.find((squareAddress)=> {return squareAddress[0]=== i.squareAddressFrom[0] + j* rank_iter_direction && squareAddress[1] === i.squareAddressFrom[1] + j * file_iter_direction})){
+                    addmove = false;
+                    break
+                } else {
+                    continue
+                }
+            } if (addmove) {
+                prunedPseudoLegalMoves.push(i);
+            }
+          //  console.log(rank_limit, file_limit);
+            
+            }
+             
+        
+        //console.log(prunedPseudoLegalMoves.length);
         return prunedPseudoLegalMoves
     }
+
 
     makeMove() {}
     

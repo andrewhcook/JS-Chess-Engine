@@ -5,8 +5,8 @@ class Knight extends Piece {
         let squares = [];
         let iterator = [2,-2];
         let otherIterator = [1,-1];
-        for (let i in iterator) {
-            for (let j in otherIterator) {
+        for (let i of iterator) {
+            for (let j of otherIterator) {
                 squares.push([i,j]);
                 squares.push([j,i]);
             }

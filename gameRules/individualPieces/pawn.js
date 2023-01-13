@@ -3,10 +3,10 @@ import {Piece} from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/piec
 class Pawn extends Piece {
     movementPattern() {
         let squares = [];
-        let iterator = [1];
+        let iterator = [1,-1];
         let otherIterator = [-1,1,0];
-        for (let i in iterator) {
-            for (let j in otherIterator) {
+        for (let i of iterator) {
+            for (let j of otherIterator) {
                 squares.push([i,j])
             }
         }

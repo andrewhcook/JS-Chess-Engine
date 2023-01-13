@@ -4,8 +4,8 @@ class King extends Piece {
     movementPattern() {
         let squares = [];
         let iterator = [-1,0,1];
-        for (let i in iterator) {
-            for (let j in iterator) {
+        for (let i of iterator) {
+            for (let j of iterator) {
                 if (i === 0 && j === 0) {
                     continue
                 }
