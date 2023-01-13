@@ -57,6 +57,6 @@ for (let i of backRankPieceArray2) {
 player1.oppPieceArray = player2.pieceArray;
 player2.oppPieceArray = player1.pieceArray;
 
-console.log('player1 moveList', player1.generateMoveList());
-console.log(player2.generateMoveList().length);
+//console.log('player1 moveList', player1.generateMoveList());
+console.log(player1.generateMoveList().length);
 

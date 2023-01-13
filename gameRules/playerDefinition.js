@@ -36,10 +36,11 @@ export class Player {
     }
     generateMoveList() {
         let moveArray = [];
-        let allPseudoLegalMoves = this.generatePseudoLegalMoveList(true);
-       console.log(allPseudoLegalMoves.length);
+        let allPseudoLegalMoves1 = this.generatePseudoLegalMoveList(true);
+        let allPseudoLegalMoves = this.prunePawnMoves(allPseudoLegalMoves1,new Move, true);
+    //   console.log(allPseudoLegalMoves.length);
         let ownPseudoLegalMoves = this.pruneOutBlockedMoves(allPseudoLegalMoves, true)
-        console.log(ownPseudoLegalMoves.length);
+     //   console.log(ownPseudoLegalMoves.length);
         for (let i of ownPseudoLegalMoves) {
           //  this.generateOppPieceArrayAfterMove(i);
          //   console.log(this.pieceArray)
@@ -240,6 +241,36 @@ export class Player {
         return prunedPseudoLegalMoves
     }
 
+    prunePawnMoves(moveList,oppMove, maximizing) {
+        let prunedPawnMoves = [];
+        for (let i of moveList) {
+            if (i.piece.type !== "Pawn") {
+                prunedPawnMoves.push(i);
+                continue
+            }
+            if ((maximizing && i.squareAddressTo[0] - i.squareAddressFrom[0] > 0) || ( !maximizing && i.squareAddressTo[0] - i.squareAddressFrom[0] < 0)) {
+                continue
+            }
+            if (Math.abs(i.squareAddressFrom[1] - i.squareAddressTo[1]) !== 0 && Math.abs(i.squareAddressFrom[0] - i.squareAddressTo[0]) === 2) {
+                continue
+            }
+            if (this.oppPieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && piece.squareAddress[1] === i.squareAddressTo[1] && Math.abs(i.squareAddressTo[1] - i.squareAddressFrom[1]) !== 0})) {
+              //  console.log(i.squareAddressFrom, i.squareAddressTo)
+                
+                prunedPawnMoves.push(i);
+            }
+            if (!this.pieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && piece.squareAddress[1] === i.squareAddressTo[1] })) {
+                if (!this.oppPieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && piece.squareAddress[1] === i.squareAddressTo[1] })) {
+                    if (Math.abs(i.squareAddressTo[1] - i.squareAddressFrom[1]) === 0) {
+                        prunedPawnMoves.push(i);
+                    }
+                    
+                    
+                }
+            }
+        }
+        return prunedPawnMoves
+    }
 
     makeMove() {}
     
