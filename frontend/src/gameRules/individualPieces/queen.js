@@ -1,4 +1,4 @@
-import {Piece} from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/pieceDefinition.js";
+import {Piece} from "../pieceDefinition.js";
 class Queen extends Piece {
     movementPattern() {
         let squares = [];

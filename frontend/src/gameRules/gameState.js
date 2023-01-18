@@ -1,5 +1,5 @@
-import {King, Queen, Rook, Bishop, Knight, Pawn}  from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/individualPieces/index.js";
-import {Player} from "/home/ahc/personalProjects2023/JsChessEngine/gameRules/playerDefinition.js";
+import {King, Queen, Rook, Bishop, Knight, Pawn}  from "./individualPieces/index.js";
+import {default as Player} from "./playerDefinition.js";
 
 
 let player1 = new Player('compoopter', true, 10, [], [])
@@ -54,9 +54,10 @@ for (let i of backRankPieceArray1) {
 for (let i of backRankPieceArray2) {
     player2.pieceArray.push(i)
 }
-player1.oppPieceArray = player2.pieceArray;
-player2.oppPieceArray = player1.pieceArray;
 
-//console.log('player1 moveList', player1.generateMoveList());
-console.log(player1.generateMoveList().length);
+
+console.log('player1 moveList', player1.generateMoveList(true,player1.pieceArray, player2.pieceArray).length);
+console.log(player2.generateMoveList(false, player2.pieceArray, player1.pieceArray))
+//console.log(player1.minimax(true, 2, player1.pieceArray, player1.oppPieceArray))
+console.log(player1.findBestMove(true,player1.pieceArray, player1.oppPieceArray))
 
