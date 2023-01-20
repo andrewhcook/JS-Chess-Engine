@@ -8,18 +8,18 @@ const AnalysisBoard = (props) => {
         const timer = setTimeout(()=> {
            // console.log(whiteTrigger);
         if (whiteTrigger) {
-        console.log(whiteTrigger);
-        let move =player1.findBestMove(true, whitePieceArray, blackPieceArray)
-        console.log(move);
-        console.log(blackPieceArray);
-        console.log(player1.generateMoveList(true, whitePieceArray, blackPieceArray, null).length)
+        let move =player1.findBestMove(true, whitePieceArray, blackPieceArray, null, true)
         let [newWhitePieceArray, newBlackPieceArray] = player1.makeMove(whitePieceArray, blackPieceArray, move);
         
-        console.log("new white piece array:", newWhitePieceArray);
-        setWhitePieceArray(newWhitePieceArray);
+        console.log("new white piece array: ", newWhitePieceArray);
+        console.log("new black piece array: ", newBlackPieceArray);
         setBlackPieceArray(newBlackPieceArray);
+        setWhitePieceArray(newWhitePieceArray);
         setWhiteTrigger(!whiteTrigger);} else {
-            let [newBlackPieceArray, newWhitePieceArray] = player2.makeMove(blackPieceArray,whitePieceArray, player2.findBestMove(false,blackPieceArray, whitePieceArray))
+            let [newBlackPieceArray, newWhitePieceArray] = player2.makeMove(blackPieceArray,whitePieceArray, player2.findBestMove(false,blackPieceArray, whitePieceArray, null,false));
+            
+        console.log("new white piece array: ", newWhitePieceArray);
+        console.log("new black piece array: ", newBlackPieceArray);
                 setWhitePieceArray(newWhitePieceArray);
                 setBlackPieceArray(newBlackPieceArray);
                 setWhiteTrigger(!whiteTrigger)}
