@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { DisplayBoard, AnalysisBoard } from './components';
+import { DisplayBoard, AnalysisBoard, TestPosition } from './components';
 import {Player} from "./gameRules";
 
 import {King, Queen, Rook, Bishop, Knight, Pawn} from "./gameRules/individualPieces"
@@ -79,7 +79,8 @@ const App = () => {
 
   return <div>
     <DisplayBoard physicalBoard = {board} whitePieceArray = {whitePieceArray} setWhitePieceArray = {setWhitePieceArray} blackPieceArray = {blackPieceArray} setBlackPieceArray = {setBlackPieceArray} player1 = {player1} player2 = {player2}> </DisplayBoard>
-    <AnalysisBoard whitePieceArray = {whitePieceArray} setWhitePieceArray = {setWhitePieceArray} blackPieceArray = {blackPieceArray} setBlackPieceArray = {setBlackPieceArray} player1 = {player1} player2 = {player2}></AnalysisBoard>
+    {/* {<AnalysisBoard whitePieceArray = {whitePieceArray} setWhitePieceArray = {setWhitePieceArray} blackPieceArray = {blackPieceArray} setBlackPieceArray = {setBlackPieceArray} player1 = {player1} player2 = {player2}></AnalysisBoard>} */}
+    <TestPosition></TestPosition>
   </div>
 };
 

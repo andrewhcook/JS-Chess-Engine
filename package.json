@@ -17,5 +17,10 @@
   "bugs": {
     "url": "https://github.com/andrewhcook/JS-Chess-Engine/issues"
   },
-  "homepage": "https://github.com/andrewhcook/JS-Chess-Engine#readme"
+  "homepage": "https://github.com/andrewhcook/JS-Chess-Engine#readme",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1"
+  }
 }

@@ -1,6 +1,8 @@
 import {King,Queen,Rook, Bishop, Knight, Pawn} from "./individualPieces/index.js"
 import {default as Move} from"./moveDefinition.js";
 import { Piece } from "./pieceDefinition.js";
+//write a test suite for the minimax
+/// minimax should implement alpha beta pruning as well as move ordering to reduce search depth (also caching positions in a transposition table)
 class Player {
     constructor(name, isComputer, skillLevel, pieceArray, oppPieceArray) {
         this.name = name;
@@ -23,18 +25,6 @@ class Player {
     }
     //[x] list out all legal moves => []determine move type / calculation order =>[] feed into thought process (decide on a move)=> make a move 
 
-    
-    generateOwnPieceArrayAfterMove(move) {
-        this.tempPieceArray = this.pieceArray.filter((piece)=> {return (piece.squareAddress[0] !== move.squareAddressFrom[0] && piece.squareAddress[1]
-            !== move.squareAddressFrom[1])});
-            this.tempPieceArray.push(move.piece);
-    }
-
-    generateOppPieceArrayAfterMove(move) {
-        this.tempOppPieceArray = this.oppPieceArray.filter((piece)=> {return (piece.squareAddress[0] !== move.squareAddressFrom[0] && piece.squareAddress[1]
-            !== move.squareAddressFrom[1])});
-            this.tempOppPieceArray.push(move.piece);
-    }
     generateMoveList(maximizing, pieceArray, oppPieceArray, lastMove) {
         //generateMoveList isn't working for some reason
         
@@ -48,12 +38,7 @@ class Player {
         let ownPseudoLegalMoves = this.pruneOutBlockedMoves(allPseudoLegalMoves, maximizing, pieceArray, oppPieceArray)
        
         for (let i of ownPseudoLegalMoves) {
-          //  this.generateOppPieceArrayAfterMove(i);
-            if (this.determineIfMovesLeavesKingInCheck(maximizing, pieceArray, oppPieceArray)) {
-                //console.log("detected move leaves king in check:", i)
-                continue
-            } else {
-                let capturedPiece = oppPieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && piece.squareAddress[1] === i.squareAddressTo[1]});
+            let capturedPiece = oppPieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && piece.squareAddress[1] === i.squareAddressTo[1]});
               //  console.log(capturedPiece);
                 if (capturedPiece) {
                     if (capturedPiece.type === "King") {
@@ -61,6 +46,12 @@ class Player {
                         continue
                     }
                 }
+          //  this.generateOppPieceArrayAfterMove(i);
+            if (this.determineIfMovesLeavesKingInCheck(maximizing, pieceArray, oppPieceArray)) {
+                //console.log("detected move leaves king in check:", i)
+                continue
+            } else {
+                
                 moveArray.push(i)
             }
         }
@@ -251,15 +242,15 @@ class Player {
         if (maximizing) {
             if (depth === 0) {
           //      console.log("values in minimax before QS:", maxPieceArray, minPieceArray, !white);
-                return this.quiescenceSearch(-10000, 10000, maxPieceArray, minPieceArray, white)
+                return this.quiescenceSearch(Number.NEGATIVE_INFINITY,Number.POSITIVE_INFINITY, maxPieceArray, minPieceArray, white)
                 
             }
-            let max = -100000;
+            let max = Number.NEGATIVE_INFINITY;
             for (let i of this.generateMoveList(white, maxPieceArray, minPieceArray)) {
                 let score = undefined;
                 let [newMaxPieceArray, newMinPieceArray] = this.makeMove(maxPieceArray,minPieceArray,i);
                 if (this.checkForCheckmate(newMaxPieceArray, newMinPieceArray, white)) {
-                    score = 10000
+                    score = Number.POSITIVE_INFINITY
                 } else {score = this.minimax(false, depth-1, newMaxPieceArray, newMinPieceArray, !white);}
                 
                 max = Math.max(score,max);
@@ -269,15 +260,15 @@ class Player {
         } else {
             if (depth === 0) {
               //  console.log("values in minimax before QS:", minPieceArray, maxPieceArray, !white);
-                return -this.quiescenceSearch(-10000, 10000, minPieceArray , maxPieceArray, white)
+                return -this.quiescenceSearch(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, minPieceArray , maxPieceArray, white)
             }
-                let min = 100000;
+                let min = Number.POSITIVE_INFINITY;
 
                 for (let i of this.generateMoveList(white, minPieceArray, maxPieceArray)){
                     let score = undefined;
                     let [newMinPieceArray, newMaxPieceArray] = this.makeMove(minPieceArray,maxPieceArray,i);
                     if (this.checkForCheckmate(newMinPieceArray, newMaxPieceArray, white)) {
-                        score = -100000
+                        score = Number.NEGATIVE_INFINITY;
                     } else {score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
                     
                     min = Math.min(score, min);
@@ -289,8 +280,6 @@ class Player {
     }
     makeMove(pieceArray, oppPieceArray, move) {
         //take the move and adjust the piece Array appropriately
-    
-   
         let returnPieceArray= [...pieceArray];
         let returnOppPieceArray = [...oppPieceArray];
         if (oppPieceArray.find((piece)=>{return move.squareAddressTo[0] === piece.squareAddress[0] && move.squareAddressTo[1] === piece.squareAddress[1]})){
@@ -315,12 +304,13 @@ class Player {
 
     
         //let newPiece = Object.assign({},returnPieceArray.find((piece) => {return piece.squareAddress[0]=== move.squareAddressFrom[0] && piece.squareAddress[1] === move.squareAddressFrom[1]}))
-        let newPiece = cloner(returnPieceArray.find((piece) => {return piece.squareAddress[0]=== move.squareAddressFrom[0] && piece.squareAddress[1] === move.squareAddressFrom[1]}))
+    let newPiece = cloner(returnPieceArray.find((piece) => {return piece.squareAddress[0]=== move.squareAddressFrom[0] && piece.squareAddress[1] === move.squareAddressFrom[1]}))
       
-      returnPieceArray = returnPieceArray.filter((piece)=> {return !(piece.squareAddress[0]=== move.squareAddressFrom[0] && piece.squareAddress[1] === move.squareAddressFrom[1])});
+      returnPieceArray = returnPieceArray.filter((piece)=> {
+       // console.log(piece.squareAddress, move.squareAddressFrom);
+        return piece.squareAddress[0] !== move.squareAddressFrom[0] || piece.squareAddress[1] !== move.squareAddressFrom[1]});
       newPiece.squareAddress = move.squareAddressTo;
       returnPieceArray.push(newPiece);
-    
         return [returnPieceArray,returnOppPieceArray]
     }
     nodeIsQuiescent(sideToMovePieceArray, sideWithoutmovePieceArray, alpha, beta) {
@@ -351,7 +341,11 @@ class Player {
         for (let i of this.generateCaptureMovesList(this.generateMoveList(white, pieceArray, oppPieceArray),oppPieceArray)) {
      //       console.log("capture move in QS", i.squareAddressTo, i.squareAddressFrom);
             const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
-            const score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white); 
+            let score = undefined;
+            if (this.checkForCheckmate(newOppPieceArray, newPieceArray, !white)) {
+                score = Number.POSITIVE_INFINITY
+            } else {score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white); }
+            
             if (score >= beta) {
                 return beta
             }
@@ -381,7 +375,7 @@ class Player {
             let best = -10000;
             let bestMove = undefined;
             for (let i of this.generateMoveList(white, tempPieceArray,tempOppPieceArray, lastMove)) {
-          //   console.log(i);
+           //  console.log(tempPieceArray, tempPieceArray);
                 let [newPieceArray, newOppPieceArray] = this.makeMove(tempPieceArray, tempOppPieceArray, i);
                 let score = this.minimax(false, 0, newOppPieceArray, newPieceArray, white);
                 console.log(score, i);
@@ -396,7 +390,7 @@ class Player {
 
         checkForCheckmate(pieceArray, oppPieceArray, white){
             if (this.checkForCheck(pieceArray,oppPieceArray, white)) {
-                if (this.generateMoveList(white, pieceArray, oppPieceArray).length === 0) {
+                if (this.generateMoveList(white, oppPieceArray, pieceArray).length === 0) {
                     return true
                 }
             }
