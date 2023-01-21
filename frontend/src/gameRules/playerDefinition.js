@@ -238,10 +238,12 @@ class Player {
 
     minimax = (maximizing, depth, maxPieceArray, minPieceArray,white) => {
        //add check for checkmate
-    
+   // console.log("minimax() called at depth: ", depth);
+    let new_depth = JSON.parse(JSON.stringify(depth -1));
         if (maximizing) {
-            if (depth === 0) {
+            if (depth <= 0) {
           //      console.log("values in minimax before QS:", maxPieceArray, minPieceArray, !white);
+      //    console.log("QS() called");
                 return this.quiescenceSearch(Number.NEGATIVE_INFINITY,Number.POSITIVE_INFINITY, maxPieceArray, minPieceArray, white)
                 
             }
@@ -251,15 +253,16 @@ class Player {
                 let [newMaxPieceArray, newMinPieceArray] = this.makeMove(maxPieceArray,minPieceArray,i);
                 if (this.checkForCheckmate(newMaxPieceArray, newMinPieceArray, white)) {
                     score = Number.POSITIVE_INFINITY
-                } else {score = this.minimax(false, depth-1, newMaxPieceArray, newMinPieceArray, !white);}
+                } else {score = this.minimax(false, new_depth, newMaxPieceArray, newMinPieceArray, !white);}
                 
                 max = Math.max(score,max);
             }
 
             return max;
         } else {
-            if (depth === 0) {
+            if (depth <= 0) {
               //  console.log("values in minimax before QS:", minPieceArray, maxPieceArray, !white);
+              
                 return -this.quiescenceSearch(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, minPieceArray , maxPieceArray, white)
             }
                 let min = Number.POSITIVE_INFINITY;
@@ -269,7 +272,7 @@ class Player {
                     let [newMinPieceArray, newMaxPieceArray] = this.makeMove(minPieceArray,maxPieceArray,i);
                     if (this.checkForCheckmate(newMinPieceArray, newMaxPieceArray, white)) {
                         score = Number.NEGATIVE_INFINITY;
-                    } else {score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
+                    } else {score = this.minimax(true, new_depth, newMaxPieceArray, newMinPieceArray, !white)}
                     
                     min = Math.min(score, min);
 
@@ -339,11 +342,11 @@ class Player {
             alpha = stand_pat
         }
         for (let i of this.generateCaptureMovesList(this.generateMoveList(white, pieceArray, oppPieceArray),oppPieceArray)) {
-     //       console.log("capture move in QS", i.squareAddressTo, i.squareAddressFrom);
+          //  console.log("capture move in QS", i.squareAddressTo, i.squareAddressFrom);
             const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
             let score = undefined;
-            if (this.checkForCheckmate(newOppPieceArray, newPieceArray, !white)) {
-                score = Number.POSITIVE_INFINITY
+            if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
+                return Number.POSITIVE_INFINITY;
             } else {score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white); }
             
             if (score >= beta) {
@@ -354,7 +357,7 @@ class Player {
             }
             
         }
-      //  console.log(alpha);
+      //  console.log("reached alpha", alpha);
         return alpha
 
     }
@@ -367,18 +370,18 @@ class Player {
                 capturedMoveList.push(i);
             }
         }
-      
+    //  console.log(capturedMoveList);
         return capturedMoveList
     }
     findBestMove(maximizing,tempPieceArray,tempOppPieceArray, lastMove = null, white) {
         //after about 20 moves findBestMove returns undefined because every move is defined as "leaving king in check"
-            let best = -10000;
+            let best = Number.NEGATIVE_INFINITY;
             let bestMove = undefined;
             for (let i of this.generateMoveList(white, tempPieceArray,tempOppPieceArray, lastMove)) {
            //  console.log(tempPieceArray, tempPieceArray);
                 let [newPieceArray, newOppPieceArray] = this.makeMove(tempPieceArray, tempOppPieceArray, i);
                 let score = this.minimax(false, 0, newOppPieceArray, newPieceArray, white);
-                console.log(score, i);
+         //       console.log(score, i);
                 if (best < score) {
                     bestMove = i;
                     best = score
