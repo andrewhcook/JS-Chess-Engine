@@ -10,8 +10,8 @@ import { useEffect } from "react";
 
 
 const TestPosition = (props) => {
-    const FENSTRINGBLACK = ["r1b2rk1/ppb2ppp/3q4/2N5/1BPnP3/P2Q1N1P/1P2BPP1/R4RK1 b - - 4 17", "8/5Q2/5p1k/6p1/1p1q2P1/5PKP/8/8 b - - 1 1"]
-    const  FENSTRING = ["r3kr2/6p1/7p/1p1Q4/5P2/1qP3PP/8/q2R2K1 w - - 6 48"]
+    const FENSTRINGBLACK = ["r1b2rk1/ppb2ppp/3q4/2N5/1BPnP3/P2Q1N1P/1P2BPP1/R4RK1 b - - 4 17", "8/5Q2/5p1k/6p1/1p1q2P1/5PKP/8/8 b - - 1 1", "r1bqkb1r/pp3ppp/3p1n2/2pQ2B1/4P3/2N5/PPP2PPP/R3KB1R b KQkq - 1 1" ]
+    const  FENSTRING = ["r3kr2/6p1/7p/1p1Q4/5P2/1qP3PP/8/q2R2K1 w - - 6 48", "q7/8/8/8/5R2/4k3/7R/4K3 w - - 0 2"]
     const FENtoPieceArray = (FEN,white) => {
         let fenArray = FEN.split(" ");
         let pieceArray = []

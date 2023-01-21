@@ -2,6 +2,7 @@ import {King,Queen,Rook, Bishop, Knight, Pawn} from "./individualPieces/index.js
 import {default as Move} from"./moveDefinition.js";
 import { Piece } from "./pieceDefinition.js";
 //write a test suite for the minimax
+// checkmate is being detected too frequently
 /// minimax should implement alpha beta pruning as well as move ordering to reduce search depth (also caching positions in a transposition table)
 class Player {
     constructor(name, isComputer, skillLevel, pieceArray, oppPieceArray) {
@@ -17,41 +18,101 @@ class Player {
     }
 // generate Move List is broken
 // pruneOutBlockedMoves is only returning 6 Pawn @[6,0] moves
-    classifyMoves(moveArray) {
-        //check for check
-        // if check, check for checkmate 
-        // check for draw (repetition, 50-move)
-        // 
+    classifyMoves(moveArray, ownPieceArray, oppPieceArray, white) {
+        const moveIsACapture = (move, oppPieceArray) => {
+            if (oppPieceArray.find((piece)=> {return move.squareAddressTo[0] === piece.squareAddress[0] && move.squareAddressTo[1] === piece.squareAddress[1]})) {
+                return true
+            } else {
+                return false
+            }
+        }
+        const moveIsACheck = (move, pieceArray, oppPieceArray, white) => {
+            let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, move);
+            if (this.checkForCheck(newPieceArray, newOppPieceArray, white)) {
+                return true
+            } else {
+                return false
+            }
+        }
+
+        // check for capture-checks 
+        // check for checks
+        // check for captures
+        // check for threats
+        // look at all other moves
+        //pseudo code :
+        // take a list of each move type
+        // meld those lists in the appropriate order
+        let finalOrderedMoveList = [];
+        let captureChecks = [];
+        let checks = [];
+        let captures = [];
+        let threats = []; 
+        //capture checks
+        for (let i of moveArray) {
+            if (moveIsACapture(i,oppPieceArray) && moveIsACheck(i,ownPieceArray,oppPieceArray,white)) {
+                if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+                    finalOrderedMoveList.push(i)
+                }
+            }
+        }
+        //checks
+        for (let i of moveArray) {
+            if (moveIsACheck(i, ownPieceArray, oppPieceArray, white)) {
+                if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+                    finalOrderedMoveList.push(i)
+                }
+            }
+        }
+
+        //captures
+        for (let i of moveArray) {
+            if (moveIsACapture(i,oppPieceArray)) {
+                if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+                    finalOrderedMoveList.push(i)
+                }
+            }
+        }
+
+        //threats
+        for (let i of moveArray) {
+            //unimplemented
+        }
+
+        //allOthers
+
+        for (let i of moveArray) {
+            if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+                finalOrderedMoveList.push(i)
+            }
+        }
+        return finalOrderedMoveList
     }
     //[x] list out all legal moves => []determine move type / calculation order =>[] feed into thought process (decide on a move)=> make a move 
 
-    generateMoveList(maximizing, pieceArray, oppPieceArray, lastMove) {
+    generateMoveList(white, pieceArray, oppPieceArray, lastMove) {
         //generateMoveList isn't working for some reason
         
         let moveArray = [];
-        let allPseudoLegalMoves1 = this.generatePseudoLegalMoveList(maximizing, pieceArray);
+        let allPseudoLegalMoves1 = this.generatePseudoLegalMoveList(white, pieceArray);
        
         
-        let allPseudoLegalMoves = this.prunePawnMoves(allPseudoLegalMoves1,lastMove, maximizing, pieceArray, oppPieceArray);
+        let allPseudoLegalMoves = this.prunePawnMoves(allPseudoLegalMoves1,lastMove, white, pieceArray, oppPieceArray);
        
         
-        let ownPseudoLegalMoves = this.pruneOutBlockedMoves(allPseudoLegalMoves, maximizing, pieceArray, oppPieceArray)
+        let ownPseudoLegalMoves = this.pruneOutBlockedMoves(allPseudoLegalMoves, white, pieceArray, oppPieceArray)
        
         for (let i of ownPseudoLegalMoves) {
             let capturedPiece = oppPieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && piece.squareAddress[1] === i.squareAddressTo[1]});
-              //  console.log(capturedPiece);
                 if (capturedPiece) {
                     if (capturedPiece.type === "King") {
-                    //    console.log('this works');
                         continue
                     }
                 }
-          //  this.generateOppPieceArrayAfterMove(i);
-            if (this.determineIfMovesLeavesKingInCheck(maximizing, pieceArray, oppPieceArray)) {
-                //console.log("detected move leaves king in check:", i)
+       const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i)
+            if (this.determineIfMovesLeavesKingInCheck(white, newPieceArray, newOppPieceArray)) {
                 continue
-            } else {
-                
+            } else {       
                 moveArray.push(i)
             }
         }
@@ -87,38 +148,34 @@ class Player {
             return false
         } else {return true}
     }
+    // this checks if pieceArray has been left in check by oppPieceArray 
+    //white is the color of pieceArray
+// if (this.determineIfMovesLeavesKingInCheck(white, newPieceArray, newOppPieceArray))
+
     determineIfMovesLeavesKingInCheck(white, pieceArray, oppPieceArray) {
-        let attackMap = this.generateOppAttackMap(white, pieceArray, oppPieceArray);
+        let attackMap = this.generateAttackMap(!white, oppPieceArray, pieceArray);
         const value = this.getKingPosition(pieceArray)
         if (attackMap.find((squareAddress)=> {return squareAddress[0] === value[0] && squareAddress[1] === value[1]})) {
-           // console.log("detected a move that left king in check");
+      
             return true
         } else {return false}
     }
 
     ///////////////////////////////////////////
-    generateOppAttackMap(white, pieceArray, oppPieceArray) {
-        let squareArray = [];
-        let plm = this.generatePseudoLegalMoveList(!white, oppPieceArray);
-        let prunedlm = this.prunePawnMoves(plm,null, !white, oppPieceArray, pieceArray);
-        let prunedblockedmoves = this.pruneOutBlockedMoves(prunedlm, true, oppPieceArray, pieceArray);
-        for (let i of prunedblockedmoves ) {
-            if (i.type === "Pawn" ){
-                if (Math.abs(i.squareAddressTo[0] - i.squareAddressFrom[0]) === 2 || (Math.abs(i.squareAddressTo[1] - i.squareAddressFrom[1])=== 0)) {
-                    continue
-                }
-            }
-            const square = i.squareAddressTo;
-            if (squareArray.find((squareAddress)=> {squareAddress[0] === square[0] && squareAddress[1] === square[1]})) {
-                continue 
-            } else {
-                squareArray.push(square);
-            }
+    generateAttackMap(white, pieceArray, oppPieceArray) {
+        const allPseudoLegalMoves = this.generatePseudoLegalMoveList(white, pieceArray);
+        const pruneOutBlockMoves = this.pruneOutBlockedMoves(allPseudoLegalMoves, true, pieceArray, oppPieceArray);
+        const prunedPawnMoves = this.prunePawnMoves(pruneOutBlockMoves, null, white, pieceArray, oppPieceArray);
+        let squareArray = []
+        for (let i of prunedPawnMoves) {
+            let square = i.squareAddressTo;
+            squareArray.push(square)
         }
+
         return squareArray
     }
     getKingPosition(pieceArray) {
-    //    console.log(pieceArray);
+    
         let king = pieceArray.find((piece)=> {return piece.type === "King"});
 
         return king.squareAddress
@@ -238,22 +295,19 @@ class Player {
 
     minimax = (maximizing, depth, maxPieceArray, minPieceArray,white) => {
        //add check for checkmate
-   // console.log("minimax() called at depth: ", depth);
-    let new_depth = JSON.parse(JSON.stringify(depth -1));
+  
         if (maximizing) {
             if (depth <= 0) {
-          //      console.log("values in minimax before QS:", maxPieceArray, minPieceArray, !white);
-      //    console.log("QS() called");
                 return this.quiescenceSearch(Number.NEGATIVE_INFINITY,Number.POSITIVE_INFINITY, maxPieceArray, minPieceArray, white)
-                
             }
             let max = Number.NEGATIVE_INFINITY;
-            for (let i of this.generateMoveList(white, maxPieceArray, minPieceArray)) {
+            let unorderedmoveList = this.generateMoveList(white, maxPieceArray, minPieceArray)
+            for (let i of this.classifyMoves(unorderedmoveList, maxPieceArray,minPieceArray, white)) {
                 let score = undefined;
                 let [newMaxPieceArray, newMinPieceArray] = this.makeMove(maxPieceArray,minPieceArray,i);
-                if (this.checkForCheckmate(newMaxPieceArray, newMinPieceArray, white)) {
+                if (this.checkForCheckmate(newMaxPieceArray, newMinPieceArray, !white)) {
                     score = Number.POSITIVE_INFINITY
-                } else {score = this.minimax(false, new_depth, newMaxPieceArray, newMinPieceArray, !white);}
+                } else {score = this.minimax(false,depth-1, newMaxPieceArray, newMinPieceArray, !white);}
                 
                 max = Math.max(score,max);
             }
@@ -261,18 +315,18 @@ class Player {
             return max;
         } else {
             if (depth <= 0) {
-              //  console.log("values in minimax before QS:", minPieceArray, maxPieceArray, !white);
-              
+
+          //    console.log(minPieceArray,maxPieceArray,white);
                 return -this.quiescenceSearch(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, minPieceArray , maxPieceArray, white)
             }
                 let min = Number.POSITIVE_INFINITY;
-
-                for (let i of this.generateMoveList(white, minPieceArray, maxPieceArray)){
+                let unorderedMoveList = this.generateMoveList(white, minPieceArray, maxPieceArray)
+                for (let i of this.classifyMoves(unorderedMoveList, minPieceArray, maxPieceArray, white)){
                     let score = undefined;
                     let [newMinPieceArray, newMaxPieceArray] = this.makeMove(minPieceArray,maxPieceArray,i);
-                    if (this.checkForCheckmate(newMinPieceArray, newMaxPieceArray, white)) {
+                    if (this.checkForCheckmate(newMinPieceArray, newMaxPieceArray, !white)) {
                         score = Number.NEGATIVE_INFINITY;
-                    } else {score = this.minimax(true, new_depth, newMaxPieceArray, newMinPieceArray, !white)}
+                    } else {score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
                     
                     min = Math.min(score, min);
 
@@ -310,7 +364,7 @@ class Player {
     let newPiece = cloner(returnPieceArray.find((piece) => {return piece.squareAddress[0]=== move.squareAddressFrom[0] && piece.squareAddress[1] === move.squareAddressFrom[1]}))
       
       returnPieceArray = returnPieceArray.filter((piece)=> {
-       // console.log(piece.squareAddress, move.squareAddressFrom);
+      
         return piece.squareAddress[0] !== move.squareAddressFrom[0] || piece.squareAddress[1] !== move.squareAddressFrom[1]});
       newPiece.squareAddress = move.squareAddressTo;
       returnPieceArray.push(newPiece);
@@ -334,6 +388,7 @@ class Player {
     }
     //return this.quiescenceSearch(-10000, 10000, maxPieceArray, minPieceArray, true)
     quiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white){
+     //   console.log(alpha,beta);
         const stand_pat = this.evaluate(pieceArray, oppPieceArray);
         if (stand_pat >= beta) {
             return beta
@@ -341,11 +396,13 @@ class Player {
         if (alpha < stand_pat) {
             alpha = stand_pat
         }
-        for (let i of this.generateCaptureMovesList(this.generateMoveList(white, pieceArray, oppPieceArray),oppPieceArray)) {
-          //  console.log("capture move in QS", i.squareAddressTo, i.squareAddressFrom);
+       /*  console.log(this.listForcingMoves(this.generateMoveList(white, pieceArray, oppPieceArray),pieceArray, oppPieceArray, white).length);
+        console.log(this.generateMoveList(white, pieceArray, oppPieceArray).length); */
+        for (let i of this.listForcingMoves(this.generateMoveList(white, pieceArray, oppPieceArray),pieceArray, oppPieceArray, white)) {
+          
             const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
             let score = undefined;
-            if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
+            if (this.checkForCheckmate(newPieceArray, newOppPieceArray, !white)) {
                 return Number.POSITIVE_INFINITY;
             } else {score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white); }
             
@@ -357,7 +414,6 @@ class Player {
             }
             
         }
-      //  console.log("reached alpha", alpha);
         return alpha
 
     }
@@ -370,18 +426,49 @@ class Player {
                 capturedMoveList.push(i);
             }
         }
-    //  console.log(capturedMoveList);
         return capturedMoveList
     }
+
+
+
+    listForcingMoves(moveList,pieceArray, oppPieceArray, white) {
+        const moveIsACapture = (move, oppPieceArray) => {
+            if (oppPieceArray.find((piece)=> {return move.squareAddressTo[0] === piece.squareAddress[0] && move.squareAddressTo[1] === piece.squareAddress[1]})) {
+                return true
+            } else {
+                return false
+            }
+        }
+        const moveIsACheck = (move, pieceArray, oppPieceArray, white) => {
+            let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, move);
+            if (this.checkForCheck(newPieceArray, newOppPieceArray, white)) {
+                return true
+            } else {
+                return false
+            }
+        }
+        let finalMoveList = [];
+        for (let i of moveList) {
+            if (moveIsACapture(i,oppPieceArray) || moveIsACheck(i, pieceArray, oppPieceArray, white)) {
+                finalMoveList.push(i);
+            }
+        }
+        return finalMoveList
+    }
+
+
     findBestMove(maximizing,tempPieceArray,tempOppPieceArray, lastMove = null, white) {
         //after about 20 moves findBestMove returns undefined because every move is defined as "leaving king in check"
             let best = Number.NEGATIVE_INFINITY;
             let bestMove = undefined;
             for (let i of this.generateMoveList(white, tempPieceArray,tempOppPieceArray, lastMove)) {
-           //  console.log(tempPieceArray, tempPieceArray);
                 let [newPieceArray, newOppPieceArray] = this.makeMove(tempPieceArray, tempOppPieceArray, i);
-                let score = this.minimax(false, 0, newOppPieceArray, newPieceArray, white);
-         //       console.log(score, i);
+                if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
+                    bestMove = i;
+                    console.log(bestMove);
+                    return bestMove
+                }
+                let score = -this.minimax(true, 0, newOppPieceArray, newPieceArray, !white);
                 if (best < score) {
                     bestMove = i;
                     best = score
@@ -391,15 +478,17 @@ class Player {
             return bestMove
         }
 
+        //checks if pieceArray has checkmated oppPieceArray
+        //white refers to the color of pieceArray
         checkForCheckmate(pieceArray, oppPieceArray, white){
             if (this.checkForCheck(pieceArray,oppPieceArray, white)) {
-                if (this.generateMoveList(white, oppPieceArray, pieceArray).length === 0) {
+                if (this.generateMoveList(!white, oppPieceArray, pieceArray).length === 0) {
                     return true
                 }
             }
             return false
         }
-
+        //checks if pieceArray leaves oppPieceArray in check
         checkForCheck(pieceArray, oppPieceArray, white) {
             if (this.determineIfMovesLeavesKingInCheck(!white, oppPieceArray, pieceArray)) {
                 return true
