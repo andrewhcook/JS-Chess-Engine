@@ -79,8 +79,8 @@ const App = () => {
 
   return <div>
     <DisplayBoard physicalBoard = {board} whitePieceArray = {whitePieceArray} setWhitePieceArray = {setWhitePieceArray} blackPieceArray = {blackPieceArray} setBlackPieceArray = {setBlackPieceArray} player1 = {player1} player2 = {player2}> </DisplayBoard>
-    {/* {<AnalysisBoard whitePieceArray = {whitePieceArray} setWhitePieceArray = {setWhitePieceArray} blackPieceArray = {blackPieceArray} setBlackPieceArray = {setBlackPieceArray} player1 = {player1} player2 = {player2}></AnalysisBoard>} */}
-    <TestPosition></TestPosition>
+    {/* <AnalysisBoard whitePieceArray = {whitePieceArray} setWhitePieceArray = {setWhitePieceArray} blackPieceArray = {blackPieceArray} setBlackPieceArray = {setBlackPieceArray} player1 = {player1} player2 = {player2}></AnalysisBoard> */}
+   {/*  {<TestPosition></TestPosition>} */}
   </div>
 };
 

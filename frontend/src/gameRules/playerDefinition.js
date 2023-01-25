@@ -15,6 +15,8 @@ class Player {
         this.tempOppPieceArray = oppPieceArray;
         this.ownAttackMap = [];
         this.oppAttackMap = [];
+        this.evaluationCache = {};
+        this.MAX_DEPTH = 5;
     }
 // generate Move List is broken
 // pruneOutBlockedMoves is only returning 6 Pawn @[6,0] moves
@@ -29,6 +31,7 @@ class Player {
         const moveIsACheck = (move, pieceArray, oppPieceArray, white) => {
             let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, move);
             if (this.checkForCheck(newPieceArray, newOppPieceArray, white)) {
+            //    console.log("move detected as a check", move);
                 return true
             } else {
                 return false
@@ -51,7 +54,9 @@ class Player {
         //capture checks
         for (let i of moveArray) {
             if (moveIsACapture(i,oppPieceArray) && moveIsACheck(i,ownPieceArray,oppPieceArray,white)) {
-                if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+                
+                if (!finalOrderedMoveList.find((move)=> {return JSON.stringify(move.squareAddressTo) === JSON.stringify(i.squareAddressTo) && JSON.stringify(move.squareAddressFrom) === JSON.stringify(i.squareAddressFrom)})) {
+                   // console.log("move detected as a capture-check", i);    
                     finalOrderedMoveList.push(i)
                 }
             }
@@ -59,7 +64,9 @@ class Player {
         //checks
         for (let i of moveArray) {
             if (moveIsACheck(i, ownPieceArray, oppPieceArray, white)) {
-                if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+              //  if (i.squareAddressTo[0] === 5 && i.squareAddressTo[1] === 5) {console.log(i);}
+                
+                if (!finalOrderedMoveList.find((move)=> {return JSON.stringify(move.squareAddressTo) === JSON.stringify(i.squareAddressTo) && JSON.stringify(move.squareAddressFrom) === JSON.stringify(i.squareAddressFrom)})) {
                     finalOrderedMoveList.push(i)
                 }
             }
@@ -68,7 +75,7 @@ class Player {
         //captures
         for (let i of moveArray) {
             if (moveIsACapture(i,oppPieceArray)) {
-                if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+                if (!finalOrderedMoveList.find((move)=> {return JSON.stringify(move.squareAddressTo) === JSON.stringify(i.squareAddressTo) && JSON.stringify(move.squareAddressFrom) === JSON.stringify(i.squareAddressFrom)})) {
                     finalOrderedMoveList.push(i)
                 }
             }
@@ -82,7 +89,7 @@ class Player {
         //allOthers
 
         for (let i of moveArray) {
-            if (!finalOrderedMoveList.find((move)=> {move.squareAddressTo === i.squareAddressTo && move.squareAddressFrom === i.squareAddressFrom})) {
+            if (!finalOrderedMoveList.find((move)=> {return JSON.stringify(move.squareAddressTo) === JSON.stringify(i.squareAddressTo) && JSON.stringify(move.squareAddressFrom) === JSON.stringify(i.squareAddressFrom)})) {
                 finalOrderedMoveList.push(i)
             }
         }
@@ -234,13 +241,8 @@ class Player {
                 }
             } if (addmove) {
                 prunedPseudoLegalMoves.push(i);
+            }            
             }
-      
-            
-            }
-             
-        
-      
         return prunedPseudoLegalMoves
     }
 
@@ -295,9 +297,13 @@ class Player {
 
     minimax = (maximizing, depth, maxPieceArray, minPieceArray,white) => {
        //add check for checkmate
-  
+       let key = JSON.stringify(maxPieceArray) + JSON.stringify(minPieceArray);
+       if (this.evaluationCache[key]) {
+        return this.evaluationCache[key]
+       }
         if (maximizing) {
             if (depth <= 0) {
+               // this.evaluationCache = {};
                 return this.quiescenceSearch(Number.NEGATIVE_INFINITY,Number.POSITIVE_INFINITY, maxPieceArray, minPieceArray, white)
             }
             let max = Number.NEGATIVE_INFINITY;
@@ -307,8 +313,10 @@ class Player {
                 let [newMaxPieceArray, newMinPieceArray] = this.makeMove(maxPieceArray,minPieceArray,i);
                 if (this.checkForCheckmate(newMaxPieceArray, newMinPieceArray, !white)) {
                     score = Number.POSITIVE_INFINITY
-                } else {score = this.minimax(false,depth-1, newMaxPieceArray, newMinPieceArray, !white);}
-                
+                } else {
+                    this.evaluationCache = {};
+                    score = this.minimax(false,depth-1, newMaxPieceArray, newMinPieceArray, !white);}
+                    this.cacheBoard(newMaxPieceArray,newMinPieceArray, score);
                 max = Math.max(score,max);
             }
 
@@ -326,8 +334,10 @@ class Player {
                     let [newMinPieceArray, newMaxPieceArray] = this.makeMove(minPieceArray,maxPieceArray,i);
                     if (this.checkForCheckmate(newMinPieceArray, newMaxPieceArray, !white)) {
                         score = Number.NEGATIVE_INFINITY;
-                    } else {score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
-                    
+                    } else {
+                    //    this.evaluationCache = {};
+                        score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
+                    this.cacheBoard(newMaxPieceArray,newMinPieceArray, score);
                     min = Math.min(score, min);
 
                 }
@@ -387,8 +397,14 @@ class Player {
         return score
     }
     //return this.quiescenceSearch(-10000, 10000, maxPieceArray, minPieceArray, true)
+    // add threat detection at the end of Qsearch => if threat outweighs alpha 
     quiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white){
      //   console.log(alpha,beta);
+
+    /*  let key = JSON.stringify(pieceArray) + JSON.stringify(oppPieceArray);
+       if (this.evaluationCache[key]) {
+        return this.evaluationCache[key]
+       } */
         const stand_pat = this.evaluate(pieceArray, oppPieceArray);
         if (stand_pat >= beta) {
             return beta
@@ -396,15 +412,16 @@ class Player {
         if (alpha < stand_pat) {
             alpha = stand_pat
         }
-       /*  console.log(this.listForcingMoves(this.generateMoveList(white, pieceArray, oppPieceArray),pieceArray, oppPieceArray, white).length);
-        console.log(this.generateMoveList(white, pieceArray, oppPieceArray).length); */
-        for (let i of this.listForcingMoves(this.generateMoveList(white, pieceArray, oppPieceArray),pieceArray, oppPieceArray, white)) {
+
+        const unorderedMoveList = this.listForcingMoves(this.generateMoveList(white, pieceArray, oppPieceArray),pieceArray, oppPieceArray, white, alpha);
+        for (let i of this.classifyMoves(unorderedMoveList, pieceArray, oppPieceArray, white)) {
           
             const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
             let score = undefined;
             if (this.checkForCheckmate(newPieceArray, newOppPieceArray, !white)) {
                 return Number.POSITIVE_INFINITY;
-            } else {score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white); }
+            } else {score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white);
+            this.cacheBoard(newPieceArray, newOppPieceArray, score) }
             
             if (score >= beta) {
                 return beta
@@ -416,6 +433,57 @@ class Player {
         }
         return alpha
 
+    }
+
+
+
+
+    newQuiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white) {
+        let depth = 2;
+        while (depth < this.MAX_DEPTH) {
+          let score = this.quiescenceSearchHelper(alpha, beta, pieceArray, oppPieceArray, white, depth);
+          this.cacheBoard(pieceArray, oppPieceArray, score)
+          if (score >= beta) {
+            return beta;
+          }
+          if (score > alpha) {
+            alpha = score;
+          }
+          depth++;
+        }
+        return alpha;
+      }
+
+
+
+
+      quiescenceSearchHelper(alpha, beta, pieceArray, oppPieceArray, white, depth) {
+      //  console.log(alpha,beta, depth);
+        if (depth === 0) {
+            return this.evaluate(pieceArray, oppPieceArray);
+        }
+        let stand_pat = this.evaluate(pieceArray, oppPieceArray);
+        if (stand_pat >= beta) {
+            return beta;
+        }
+        if (stand_pat > alpha) {
+            alpha = stand_pat;
+        }
+        let unorderedMoveList = this.generateMoveList(white, pieceArray, oppPieceArray);
+        for (let i of unorderedMoveList) {
+            let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
+            if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
+                return Number.POSITIVE_INFINITY
+            }
+            let score = -this.quiescenceSearchHelper(-beta, -alpha, newOppPieceArray, newPieceArray, !white, depth - 1);
+            if (score >= beta) {
+                return beta;
+            }
+            if (score > alpha) {
+                alpha = score;
+            }
+        }
+        return alpha;
     }
     
 
@@ -431,52 +499,95 @@ class Player {
 
 
 
-    listForcingMoves(moveList,pieceArray, oppPieceArray, white) {
-        const moveIsACapture = (move, oppPieceArray) => {
-            if (oppPieceArray.find((piece)=> {return move.squareAddressTo[0] === piece.squareAddress[0] && move.squareAddressTo[1] === piece.squareAddress[1]})) {
-                return true
-            } else {
-                return false
+    listForcingMoves(moveList,pieceArray, oppPieceArray, white, alpha) {
+      //  console.log(moveList);
+      const moveIsACapture = (move, oppPieceArray) => {
+        if (oppPieceArray.find((piece)=> {return move.squareAddressTo[0] === piece.squareAddress[0] && move.squareAddressTo[1] === piece.squareAddress[1]})) {
+            return true
+        } else {
+            return false
+        }
+    }
+    const moveIsACheck = (move, pieceArray, oppPieceArray, white) => {
+        let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, move);
+        if (this.checkForCheck(newPieceArray, newOppPieceArray, white)) {
+        //    console.log("move detected as a check", move);
+            return true
+        } else {
+            return false
+        }
+    }
+
+
+        //check for all threats whose value exceeds alpha => this includes ALL threats to give check
+        const threatValue = (move, pieceArray, oppPieceArray, white) => {
+            let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray,move);
+
+            let attackMap = this.generateAttackMap(white, newPieceArray, newOppPieceArray, white);
+
+            let max = 0;
+
+           /*  for (let i of this.generateMoveList(white, newPieceArray, newOppPieceArray)){
+                if (moveIsACheck(i, newPieceArray, newOppPieceArray, white)) {
+                    return Number.POSITIVE_INFINITY
+                }
+            }
+ */
+            for (let i of attackMap) {
+                let piece = newOppPieceArray.find((piece)=> {return piece.squareAddress[0] === i[0] && piece.squareAddress[1] === i[1]});
+                if (piece) {
+                    if (piece.value > max){
+                    max = piece.value
+                }
+                
             }
         }
-        const moveIsACheck = (move, pieceArray, oppPieceArray, white) => {
-            let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, move);
-            if (this.checkForCheck(newPieceArray, newOppPieceArray, white)) {
-                return true
-            } else {
-                return false
-            }
-        }
+        return max
+        
+    }
+
         let finalMoveList = [];
         for (let i of moveList) {
             if (moveIsACapture(i,oppPieceArray) || moveIsACheck(i, pieceArray, oppPieceArray, white)) {
+             //   console.log("move being listed as a capture or check in listForcingmoves:", i);
+                finalMoveList.push(i);
+                continue
+            }
+            if (threatValue(i, pieceArray, oppPieceArray, white) >= alpha) {
                 finalMoveList.push(i);
             }
+
         }
         return finalMoveList
     }
 
 
     findBestMove(maximizing,tempPieceArray,tempOppPieceArray, lastMove = null, white) {
-        //after about 20 moves findBestMove returns undefined because every move is defined as "leaving king in check"
-            let best = Number.NEGATIVE_INFINITY;
-            let bestMove = undefined;
-            for (let i of this.generateMoveList(white, tempPieceArray,tempOppPieceArray, lastMove)) {
-                let [newPieceArray, newOppPieceArray] = this.makeMove(tempPieceArray, tempOppPieceArray, i);
-                if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
-                    bestMove = i;
-                    console.log(bestMove);
-                    return bestMove
-                }
-                let score = -this.minimax(true, 0, newOppPieceArray, newPieceArray, !white);
-                if (best < score) {
-                    bestMove = i;
-                    best = score
-                }
+        let best = Number.NEGATIVE_INFINITY;
+        let bestMove = undefined;
+        let alpha = Number.NEGATIVE_INFINITY;
+        let beta = Number.POSITIVE_INFINITY;
+        let unorderedMoveList = this.generateMoveList(white, tempPieceArray,tempOppPieceArray, lastMove)
+        for (let i of unorderedMoveList) {
+            let [newPieceArray, newOppPieceArray] = this.makeMove(tempPieceArray, tempOppPieceArray, i);
+            if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
+                bestMove = i;
+                console.log("checkmate detected!: ", bestMove);
+                return bestMove
             }
-            console.log(best, bestMove);
-            return bestMove
+            this.evaluationCache = {};
+            let score = -this.newQuiescenceSearch(alpha, beta, newOppPieceArray ,newPieceArray, !white)
+            if (score > alpha) {
+                alpha = score;
+            }
+            if (best < score) {
+                bestMove = i;
+                best = score
+            }
         }
+        console.log(best, bestMove);
+        return bestMove
+    }
 
         //checks if pieceArray has checkmated oppPieceArray
         //white refers to the color of pieceArray
@@ -496,6 +607,15 @@ class Player {
                 return false
             }
         }
+
+        cacheBoard(pieceArray, oppPieceArray, evaluationValue) {
+            let maxPieceArray = [...pieceArray];
+            let minPieceArray = [...oppPieceArray];
+
+            let key = JSON.stringify(maxPieceArray) + JSON.stringify(minPieceArray);
+            this.evaluationCache[key] = evaluationValue
+        }
+
 }
 
 export default Player
