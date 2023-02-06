@@ -12,9 +12,6 @@ const DisplayBoard = (props) => {
            // console.log(whiteTrigger);
         if (!whiteTrigger){
             let [newBlackPieceArray, newWhitePieceArray] = player2.makeMove(blackPieceArray,whitePieceArray, player2.findBestMove(false,blackPieceArray, whitePieceArray, null,false));
-            
-        console.log("new white piece array: ", newWhitePieceArray);
-        console.log("new black piece array: ", newBlackPieceArray);
                 setWhitePieceArray(newWhitePieceArray);
                 setBlackPieceArray(newBlackPieceArray);
                 setWhiteTrigger(!whiteTrigger)}

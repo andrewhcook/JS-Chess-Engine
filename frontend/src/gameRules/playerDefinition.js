@@ -16,7 +16,7 @@ class Player {
         this.ownAttackMap = [];
         this.oppAttackMap = [];
         this.evaluationCache = {};
-        this.MAX_DEPTH = 5;
+        this.MAX_DEPTH = 10;
     }
 // generate Move List is broken
 // pruneOutBlockedMoves is only returning 6 Pawn @[6,0] moves
@@ -123,6 +123,13 @@ class Player {
                 moveArray.push(i)
             }
         }
+
+        for (let i of moveArray) {
+            if ((i.squareAddressTo[0] === 0 || i.squareAddressTo[0] === 7) && i.type === "Pawn") {
+                i.type = "Queen"
+            }
+        }
+
         return moveArray
     }
     generatePseudoLegalMoveList(bool, pieceArray) {
@@ -284,7 +291,8 @@ class Player {
                 }
             }
             
-             //oppMove passed over a capture square of pieceArray, append the appropriate move to prunedPawnMoves
+             
+            
         }
         return prunedPawnMoves
     }
@@ -372,6 +380,10 @@ class Player {
         return piece.squareAddress[0] !== move.squareAddressFrom[0] || piece.squareAddress[1] !== move.squareAddressFrom[1]});
       newPiece.squareAddress = move.squareAddressTo;
       returnPieceArray.push(newPiece);
+      if (move.piece === "Pawn" && (move.squareAddressTo[0] === 0 || move.squareAddressTo[0] === 7)) {
+        returnPieceArray = returnPieceArray.filter((piece)=> {return JSON.stringify(piece.squareAddress) !== JSON.stringify(move.squareAddressTo)})
+        returnPieceArray.push(new Queen("Queen", 9,9, move.squareAddressTo))
+      }
         return [returnPieceArray,returnOppPieceArray]
     }
     nodeIsQuiescent(sideToMovePieceArray, sideWithoutmovePieceArray, alpha, beta) {
@@ -433,7 +445,7 @@ class Player {
 
 
     newQuiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white) {
-        let depth = 2;
+        let depth = 6;
         while (depth < this.MAX_DEPTH) {
           let score = this.quiescenceSearchHelper(alpha, beta, pieceArray, oppPieceArray, white, depth);
           this.cacheBoard(pieceArray, oppPieceArray, score)
