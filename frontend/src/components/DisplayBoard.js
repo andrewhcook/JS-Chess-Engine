@@ -19,7 +19,7 @@ const DisplayBoard = (props) => {
                 setBlackPieceArray(newBlackPieceArray);
                 setWhiteTrigger(!whiteTrigger)}
 
-        }, 3000)
+        }, 50)
         return () => clearTimeout(timer);
     }, [whiteTrigger])
 
@@ -29,9 +29,16 @@ const DisplayBoard = (props) => {
           setSelectedSquare(square);
         } else {
           // If a square is already selected, turn the click into a move
-          console.log(selectedSquare);
           let piece_type = whitePieceArray.find((piece)=> {return JSON.stringify(piece.squareAddress) === JSON.stringify(selectedSquare)})
-          const move = new Move(selectedSquare, square, piece_type, false, false, false, false, false, [])
+          const move = new Move(selectedSquare, square, piece_type.type, false, false, false, false, []);
+          console.log("move: ", move);
+          if (!player1.generateMoveList(true, whitePieceArray, blackPieceArray).find((moveInList)=> {
+            return JSON.stringify(move) === JSON.stringify(moveInList)})) {
+            
+            setSelectedSquare(null);
+            alert("That move isn't legal!");
+            return
+          }
           const [newPieceArray, newOppPieceArray] = player1.makeMove(whitePieceArray, blackPieceArray, move);
           setWhitePieceArray(newPieceArray);
           setBlackPieceArray(newOppPieceArray);

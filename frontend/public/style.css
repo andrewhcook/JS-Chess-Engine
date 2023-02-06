@@ -10,16 +10,16 @@
     display: block;
     background-color: brown;
     border: 1px dashed black;
-    height: 5vh;
-    width: 5vh;
+    height: 10vh;
+    width: 10vh;
 }
 
 .light {
     display: block;
     background-color: bisque;
     border: 1px dashed black;
-    height: 5vh;
-    width: 5vh;
+    height: 10vh;
+    width: 10vh;
 }
 
 
@@ -63,7 +63,7 @@
     background-image: url("./pieceImages/Screenshot_20230115_085427.png");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 50%
+    background-size: 35%
 }
 
 .black.King{
@@ -105,5 +105,5 @@
     background-image: url("./pieceImages/Screenshot_20230115_085553.png");
     background-repeat: no-repeat;
     background-position: center;
-     background-size: 50%
+     background-size: 40%
 }

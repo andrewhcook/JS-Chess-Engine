@@ -127,11 +127,7 @@ class Player {
     }
     generatePseudoLegalMoveList(bool, pieceArray) {
         let iterator = pieceArray;
-        /* 
-        if (!bool) {
-            iterator = oppPieceArray;
-            
-        } */
+        
         
         let moveArray = [];
         for (let i of iterator) {
@@ -278,11 +274,9 @@ class Player {
                     
                 }
             }
-            if  (maximizing &&  (i.squareAddressFrom[0] !== 6 && Math.abs(i.squareAddressTo[0] - i.squareAddressFrom[0])> 1)) {
-                continue
-            }
-            if (!maximizing && i.squareAddressFrom[0] !== 2 && Math.abs(i.squareAddressTo[0] - i.squareAddressFrom[0]) > 1) {
-                continue}
+            
+            if  (maximizing  && (i.squareAddressFrom[0] === 6 && Math.abs(i.squareAddressTo[0] - i.squareAddressFrom[0])> 1) && !pieceArray.find((piece) => { return JSON.stringify(piece.squareAddress) === JSON.stringify(i.squareAddressTo)})) {prunedPawnMoves.push(i)} 
+            if  (maximizing  && (i.squareAddressFrom[0] === 1 && Math.abs(i.squareAddressTo[0] - i.squareAddressFrom[0])> 1) && !pieceArray.find((piece) => { return JSON.stringify(piece.squareAddress) === JSON.stringify(i.squareAddressTo)})) {prunedPawnMoves.push(i)} 
             
             if (oppMove){
                 if (oppMove.piece === "Pawn" && Math.abs(oppMove.squareAddressTo[0] - oppMove.squareAddressFrom) === 2 && pieceArray.find((piece)=> {return piece.squareAddress[0] === i.squareAddressTo[0] && Math.abs(piece.squareAddress[1] - i.squareAddressTo[1]) ===1})) {
