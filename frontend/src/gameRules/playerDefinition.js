@@ -338,10 +338,9 @@ class Player {
                         score = Number.NEGATIVE_INFINITY;
                     } else {
                     //    this.evaluationCache = {};
-                        score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
+                    score = this.minimax(true, depth-1, newMaxPieceArray, newMinPieceArray, !white)}
                     this.cacheBoard(newMaxPieceArray,newMinPieceArray, score);
                     min = Math.min(score, min);
-
                 }
 
             return min
@@ -404,66 +403,15 @@ class Player {
     }
     //return this.quiescenceSearch(-10000, 10000, maxPieceArray, minPieceArray, true)
     // add threat detection at the end of Qsearch => if threat outweighs alpha 
-    quiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white){
-     //   console.log(alpha,beta);
-
-    /*  let key = JSON.stringify(pieceArray) + JSON.stringify(oppPieceArray);
-       if (this.evaluationCache[key]) {
-        return this.evaluationCache[key]
-       } */
-        const stand_pat = this.evaluate(pieceArray, oppPieceArray);
-        if (stand_pat >= beta) {
-            return beta
-        }
-        if (alpha < stand_pat) {
-            alpha = stand_pat
-        }
-
-        const unorderedMoveList = this.listForcingMoves(this.generateMoveList(white, pieceArray, oppPieceArray),pieceArray, oppPieceArray, white, alpha);
-        for (let i of this.classifyMoves(unorderedMoveList, pieceArray, oppPieceArray, white)) {
-          
-            const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
-            let score = undefined;
-            if (this.checkForCheckmate(newPieceArray, newOppPieceArray, !white)) {
-                return Number.POSITIVE_INFINITY;
-            } else {score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white);
-            this.cacheBoard(newPieceArray, newOppPieceArray, score) }
-            
-            if (score >= beta) {
-                return beta
-            }
-            if (score > alpha) {
-                alpha = score
-            }
-            
-        }
-        return alpha
-
-    }
+   
 
 
 
 
-    newQuiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white) {
-        let depth = 6;
-        while (depth < this.MAX_DEPTH) {
-          let score = this.quiescenceSearchHelper(alpha, beta, pieceArray, oppPieceArray, white, depth);
-          this.cacheBoard(pieceArray, oppPieceArray, score)
-          if (score >= beta) {
-            return beta;
-          }
-          if (score > alpha) {
-            alpha = score;
-          }
-          depth++;
-        }
-        return alpha;
-      }
 
 
 
-
-      quiescenceSearchHelper(alpha, beta, pieceArray, oppPieceArray, white, depth) {
+     /*  quiescenceSearchHelper(alpha, beta, pieceArray, oppPieceArray, white, depth) {
       //  console.log(alpha,beta, depth);
         if (depth === 0) {
             return this.evaluate(pieceArray, oppPieceArray);
@@ -490,7 +438,7 @@ class Player {
             }
         }
         return alpha;
-    }
+    } */
     
 
     generateCaptureMovesList(moveList, oppPieceArray) {
@@ -505,8 +453,7 @@ class Player {
 
 
 
-    listForcingMoves(moveList,pieceArray, oppPieceArray, white, alpha) {
-      //  console.log(moveList);
+    listForcingMoves(moveList,pieceArray, oppPieceArray, white, alpha,beta) {
       const moveIsACapture = (move, oppPieceArray) => {
         if (oppPieceArray.find((piece)=> {return move.squareAddressTo[0] === piece.squareAddress[0] && move.squareAddressTo[1] === piece.squareAddress[1]})) {
             return true
@@ -523,43 +470,67 @@ class Player {
             return false
         }
     }
-
+    const moveIsPromotion = (move, pieceArray, white) => {
+        if (move.piece === "Queen" && move.squareAddressTo[0] === 0 && white) {
+            return true
+        }
+        if (move.piece === "Queen" && move.squareAddressTo[7] === 0 && !white) {
+            return true
+        }
+        return false
+    }
 
         //check for all threats whose value exceeds alpha => this includes ALL threats to give check
-        const threatValue = (move, pieceArray, oppPieceArray, white) => {
+        const threatValue = (move, pieceArray, oppPieceArray, white, beta) => {
             let [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray,move);
 
             let attackMap = this.generateAttackMap(white, newPieceArray, newOppPieceArray, white);
 
-            let max = 0;
+            let max = beta;
 
-           /*  for (let i of this.generateMoveList(white, newPieceArray, newOppPieceArray)){
-                if (moveIsACheck(i, newPieceArray, newOppPieceArray, white)) {
-                    return Number.POSITIVE_INFINITY
-                }
-            }
- */
             for (let i of attackMap) {
                 let piece = newOppPieceArray.find((piece)=> {return piece.squareAddress[0] === i[0] && piece.squareAddress[1] === i[1]});
                 if (piece) {
                     if (piece.value > max){
                     max = piece.value
                 }
-                
             }
         }
-        return max
         
+        let newMoves = this.generateMoveList(white, newPieceArray, newOppPieceArray)
+        for (let i of newMoves) {
+            let [threatPieceArray, threatOppPieceArray] = this.makeMove(newPieceArray, newOppPieceArray, i);
+            let newAttackMap = this.generateAttackMap(white, threatPieceArray,threatOppPieceArray)
+            for (let j of newAttackMap) {
+            let piece = threatOppPieceArray.find((piece)=> {return piece.squareAddress[0] === j[0] && piece.squareAddress[1] === j[1]});
+                if (piece) {
+                    if (piece.value > max){
+                    max = piece.value;
+                }
+            }
+        }
     }
+    return max
+        
+}
 
-        let finalMoveList = [];
+    let finalMoveList = [];
+    for (let i of moveList) {
+                if (this.checkForCheck(oppPieceArray, pieceArray, !white)) {
+                    finalMoveList.push(i)
+                }
+            }
+        
+
+
         for (let i of moveList) {
-            if (moveIsACapture(i,oppPieceArray) || moveIsACheck(i, pieceArray, oppPieceArray, white)) {
+            if (moveIsACapture(i,oppPieceArray) || moveIsACheck(i, pieceArray, oppPieceArray, white) || moveIsPromotion(pieceArray, white)) {
              //   console.log("move being listed as a capture or check in listForcingmoves:", i);
                 finalMoveList.push(i);
                 continue
             }
-            if (threatValue(i, pieceArray, oppPieceArray, white) >= alpha) {
+            if (threatValue(i, pieceArray, oppPieceArray, white, alpha) >= beta) {
+                //console.log("threat value >= alpha")
                 finalMoveList.push(i);
             }
 
@@ -578,11 +549,11 @@ class Player {
             let [newPieceArray, newOppPieceArray] = this.makeMove(tempPieceArray, tempOppPieceArray, i);
             if (this.checkForCheckmate(newPieceArray, newOppPieceArray, white)) {
                 bestMove = i;
-                console.log("checkmate detected!: ", bestMove);
+                console.alert("checkmate detected!: ", bestMove);
                 return bestMove
             }
             this.evaluationCache = {};
-            let score = -this.newQuiescenceSearch(alpha, beta, newOppPieceArray ,newPieceArray, !white)
+            let score = -this.search(alpha, beta, newOppPieceArray ,newPieceArray, !white, 0)
             if (score > alpha) {
                 alpha = score;
             }
@@ -594,6 +565,7 @@ class Player {
         console.log(best, bestMove);
         return bestMove
     }
+    
 
         //checks if pieceArray has checkmated oppPieceArray
         //white refers to the color of pieceArray
@@ -622,6 +594,104 @@ class Player {
             this.evaluationCache[key] = evaluationValue
         }
 
-}
-
-export default Player
+        
+        //CHAT GPT TEST
+        
+        
+        alphaBetaSearch(alpha, beta, pieceArray, oppPieceArray, white, depth) {
+            if (depth === 0) {
+                // Return an evaluation of the position when the depth limit is reached
+                return this.quiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white, depth);
+            } 
+            
+            const stand_pat = this.evaluate(pieceArray, oppPieceArray);
+            if (stand_pat >= beta) {
+                return beta;
+            }
+            if (alpha < stand_pat) {
+                alpha = stand_pat;
+            }
+            
+            const unorderedMoveList = this.generateMoveList(white, pieceArray, oppPieceArray);
+            
+            for (let i of unorderedMoveList) {
+                const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
+                let score = undefined;
+                
+                if (this.checkForCheckmate(newPieceArray, newOppPieceArray, !white)) {
+                    return Number.POSITIVE_INFINITY;
+                } else {
+                    score = -this.alphaBetaSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white, depth - 1);
+                    this.cacheBoard(newPieceArray, newOppPieceArray, score);
+                }
+                
+                if (score >= beta) {
+                    return beta;
+                }
+                if (score > alpha) {
+                    alpha = score;
+                }
+            }
+            
+            return alpha;
+        }
+        
+        quiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white, depth) {
+            const stand_pat = this.evaluate(pieceArray, oppPieceArray);
+            if (stand_pat >= beta) {
+                return beta;
+            }
+            if (alpha < stand_pat) {
+                alpha = stand_pat;
+            }
+            let all_moves = this.generateMoveList(white, pieceArray, oppPieceArray)
+            
+            
+            const unorderedMoveList = this.listForcingMoves(
+                all_moves,
+                pieceArray,
+                oppPieceArray,
+                white,
+                alpha,
+                beta
+                );
+                
+                for (let i of this.classifyMoves(unorderedMoveList, pieceArray, oppPieceArray, white)) {
+                    
+                    const [newPieceArray, newOppPieceArray] = this.makeMove(pieceArray, oppPieceArray, i);
+                    let score = undefined;
+                    
+                    if (this.checkForCheckmate(newPieceArray, newOppPieceArray, !white)) {
+                        return Number.POSITIVE_INFINITY;
+                    } else {
+                        score = -this.quiescenceSearch(-beta, -alpha, newOppPieceArray, newPieceArray, !white, depth - 1);
+                        this.cacheBoard(newPieceArray, newOppPieceArray, score);
+                    }
+                    
+                    if (score >= beta) {
+                        return beta;
+                    }
+                    if (score > alpha) {
+                        alpha = score;
+                    }
+                }
+                
+                return alpha;
+            }
+            
+            // Entry point for the search with a specified depth limit
+            search(alpha, beta, pieceArray, oppPieceArray, white, depth) {
+                if (depth <= 0) {
+                    // Use quiescence search at the specified depth
+                    return this.quiescenceSearch(alpha, beta, pieceArray, oppPieceArray, white, depth);
+                } else {
+                    // Use alpha-beta search at higher depths
+                    return this.alphaBetaSearch(alpha, beta, pieceArray, oppPieceArray, white, depth);
+                }
+            }
+            
+            
+        }
+            
+            export default Player
+            
